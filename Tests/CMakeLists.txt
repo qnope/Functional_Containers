@@ -11,6 +11,6 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(FcTest test.cpp)
-target_link_libraries(FcTest PRIVATE FC::FC gtest_main)
-add_test(NAME FcTest COMMAND FcTest)
+add_executable(fc_optional_test test_optional.cpp)
+target_link_libraries(fc_optional_test PRIVATE FC::FC gtest_main)
+add_test(NAME fc_optional_test COMMAND fc_optional_test)
