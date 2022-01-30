@@ -1,0 +1,24 @@
+name: Documentation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+jobs:
+  builds:
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        
+      - name: Launch
+        run: ./.github/scripts/doc.sh
+        shell: bash
