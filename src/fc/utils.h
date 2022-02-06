@@ -3,6 +3,8 @@
 #include <type_traits>
 #include <compare>
 
+#include "concepts.h"
+
 #ifndef fwd
 #define fwd(x) static_cast<decltype(x) &&>(x)
 #endif
@@ -49,5 +51,42 @@ namespace fc {
 
     template <typename T>
     using remove_rvalue_reference_t = typename remove_rvalue_reference<T>::type;
+
+    constexpr auto compose() noexcept {
+        return [](auto &&x) -> decltype(auto) { return fwd(x); };
+    }
+
+    template <typename F, typename... Fs>
+    constexpr auto compose(F f, Fs... fs) noexcept {
+        if constexpr (sizeof...(Fs) == 0) {
+            return f;
+        } else {
+            return [=](auto &&...xs) -> decltype(auto) { //
+                return std::invoke(compose(fs...), std::invoke(f, fwd(xs)...));
+            };
+        }
+    }
+
+    namespace detail {
+        template <typename F, applyable_object Tuple, std::size_t... I>
+        constexpr auto apply_impl(F &&f, Tuple &&t, std::index_sequence<I...>)
+            -> decltype(std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))...)) {
+            return std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))...);
+        }
+    } // namespace detail
+
+    // a sfinae friendly apply
+    template <typename F, applyable_object Tuple>
+    constexpr auto apply(F &&f, Tuple &&t)
+        -> decltype(detail::apply_impl(std::forward<F>(f), std::forward<Tuple>(t),
+                                       std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{})) {
+        return detail::apply_impl(std::forward<F>(f), std::forward<Tuple>(t),
+                                  std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<Tuple>>>{});
+    }
+
+    template <typename F, typename Tuple>
+    concept apply_invocable = applyable_object<Tuple> && requires(F &&f, Tuple &&tuple) {
+        fc::apply(fwd(f), fwd(tuple));
+    };
 
 } // namespace fc
