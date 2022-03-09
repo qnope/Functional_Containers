@@ -34,20 +34,33 @@ namespace fc {
         using type = T;
     };
 
-    template <typename T, bool b = borrowed<std::remove_cvref_t<T>>>
-    struct underlying_with_cv_ref;
+#define FC_CAT_IMPL(x, ...) x##__VA_ARGS__
+#define FC_CAT(...) FC_CAT_IMPL(__VA_ARGS__)
 
-    template <typename T>
-    using underlying_with_cv_ref_t = typename underlying_with_cv_ref<T>::type;
+    ////// For normal array
+#define MAKE_UNDERLYING_TYPE_TRAITS(name, value_type)                                                                  \
+    template <typename T, bool b = borrowed<std::remove_cvref_t<T>>>                                                   \
+    struct name;                                                                                                       \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    using FC_CAT(name, _t) = typename name<T>::type;                                                                   \
+                                                                                                                       \
+    template <typename T, bool B>                                                                                      \
+    struct name<T &, B> : type_t<std::add_lvalue_reference_t<typename T::value_type>> {};                              \
+                                                                                                                       \
+    template <typename T, bool B>                                                                                      \
+    struct name<const T &, B> : type_t<std::add_lvalue_reference_t<std::add_const_t<typename T::value_type>>> {};      \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    struct name<T &&, true> : type_t<std::add_lvalue_reference_t<typename std::remove_cvref_t<T>::value_type>> {};     \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    struct name<T &&, false> : type_t<typename std::remove_cvref_t<T>::value_type> {};
 
-    template <typename T, bool B>
-    struct underlying_with_cv_ref<T &, B> : type_t<decltype(*begin(std::declval<T &>()))> {};
+    MAKE_UNDERLYING_TYPE_TRAITS(underlying_type_with_cv_ref, value_type)
+    MAKE_UNDERLYING_TYPE_TRAITS(underlying_mapped_type_with_cv_ref, mapped_type)
 
-    template <typename T>
-    struct underlying_with_cv_ref<T &&, true> : type_t<decltype(*begin(std::declval<T &>()))> {};
-
-    template <typename T>
-    struct underlying_with_cv_ref<T &&, false> : type_t<std::decay_t<decltype(*begin(std::declval<T &>()))>> {};
+#undef MAKE_UNDERLYING_TYPE_TRAITS
 
     template <typename T, bool b = borrowed<std::remove_cvref_t<T>>>
     struct underlying_range {
@@ -64,10 +77,6 @@ namespace fc {
 
     template <typename... T>
     struct iter_impl;
-
-#define FC_CAT_IMPL(x, ...) x##__VA_ARGS__
-#define FC_CAT(...) FC_CAT_IMPL(__VA_ARGS__)
-#define STRIP_PARENTHESE(...) __VA_ARGS__
 
 #define FC_MAKE_FUNCTIONS(foo, ...)                                                                                    \
   public:                                                                                                              \
@@ -130,7 +139,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto find_static(auto &&that, const auto &v) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto it = std::find(begin(that), end(that), v);
             if (it == end(that)) {
                 return R{fc::nullopt};
@@ -144,7 +153,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto find_if_static(auto &&that, auto &&...fs) requires(sizeof...(fs) > 0) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto it = std::find_if(begin(that), end(that), make_caller(compose(fwd(fs)...)));
             if (it == end(that)) {
                 return R{fc::nullopt};
@@ -243,7 +252,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto min_element_static(auto &&that, auto &&...fs) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto e = end(that);
             if (auto it = min_element_it_static(fwd(that), fwd(fs)...); it != e) {
                 return R{*it};
@@ -253,7 +262,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto max_element_static(auto &&that, auto &&...fs) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto e = end(that);
             if (auto it = max_element_it_static(fwd(that), fwd(fs)...); it != e) {
                 return R{*it};
@@ -263,7 +272,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto minmax_element_static(auto &&that, auto &&...fs) {
-            using r = underlying_with_cv_ref_t<decltype(that) &&>;
+            using r = underlying_type_with_cv_ref_t<decltype(that) &&>;
             using R = optional<std::pair<r, r>>;
             auto e = end(that);
             if (auto it = minmax_element_it_static(fwd(that), fwd(fs)...); it.first != e) {
@@ -340,7 +349,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto nth_element_static(auto &&that, std::size_t nth, auto &&...fs) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto e = end(that);
             if (auto it = nth_element_it_static(fwd(that), nth, fwd(fs)...); it != e) {
                 return R{*it};
@@ -359,7 +368,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto lower_bound_static(auto &&that, const auto &v, auto &&...fs) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto e = end(that);
             if (auto it = lower_bound_it_static(fwd(that), v, fwd(fs)...); it != e) {
                 return R{*it};
@@ -368,7 +377,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto upper_bound_static(auto &&that, const auto &v, auto &&...fs) {
-            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
+            using R = optional<underlying_type_with_cv_ref_t<decltype(that) &&>>;
             auto e = end(that);
             if (auto it = upper_bound_it_static(fwd(that), v, fwd(fs)...); it != e) {
                 return R{*it};
@@ -616,43 +625,44 @@ namespace fc {
         FC_MAKE_FUNCTIONS(stable_partition)
     };
 
-    //    template<typename Rng>
-    //    struct map_algos : crtp<Rng, map_algos<Rng>> {
-    //        FC_CONSTEXPR_ALGO static auto find_it_static(auto &&that, const auto &k) {
-    //            static_assert(borrowed<decltype(that)>);
-    //            return that.find(k);
-    //        }
+    template <typename Rng>
+    struct map_algos : crtp<Rng, map_algos<Rng>> {
+        FC_CONSTEXPR_ALGO static auto find_it_static(auto &&that, const auto &k) {
+            static_assert(borrowed<decltype(that)>);
+            return that.underlying_map().find(k);
+        }
 
-    //        template <typename C>
-    //        FC_CONSTEXPR_ALGO auto find(auto &&that, const auto &k) {
-    //            using R = optional<underlying_with_cv_ref_t<decltype(that) &&>>;
-    //            auto it = std::find(begin(that), end(that), v);
-    //            if (it == end(that)) {
-    //                return R{fc::nullopt};
-    //            }
-    //            return R{*it};
-    //            return FWD(c).find(FWD(k));
-    //        }
+        FC_CONSTEXPR_ALGO static auto find_static(auto &&that, const auto &k) {
+            using R = optional<underlying_mapped_type_with_cv_ref_t<decltype(that) &&>>;
+            auto it = find_it_static(that, k);
+            if (it == end(that)) {
+                return R{fc::nullopt};
+            }
+            return R{it->second};
+        }
 
-    //        template <typename C>
-    //        FC_CONSTEXPR_ALGO auto map_find_value(C &&c, const typename ltl::remove_cvref_t<C>::key_type &k) {
-    //            auto it = FWD(c).find(FWD(k));
-    //            if (it == FWD(c).end()) {
-    //                return ltl::optional<decltype(it->second)>{};
-    //            }
-    //            return ltl::make_optional(it->second);
-    //        }
+        FC_CONSTEXPR_ALGO static auto take_static(auto &&that, const auto &k) {
+            using R = optional<typename std::remove_cvref_t<decltype(that)>::mapped_type>;
+            auto it = find_it_static(that, k);
+            if (it == end(that)) {
+                return R{fc::nullopt};
+            }
+            R result{it->second};
+            that.underlying_map().erase(it);
+            return result;
+        }
 
-    ////        template <typename C>
-    ////        FC_CONSTEXPR_ALGO auto map_take(C &c, const typename ltl::remove_cvref_t<C>::key_type &k) {
-    ////            auto it = c.find(FWD(k));
-    ////            if (it == c.end()) {
-    ////                return ltl::optional<decltype(it->second)>{};
-    ////            }
-    ////            auto result = ltl::make_optional(std::move(it->second));
-    ////            c.erase(it);
-    ////            return result;
-    ////        }
-    //    };
+        FC_MAKE_FUNCTIONS(find_it)
+        FC_MAKE_FUNCTIONS(find)
+        FC_MAKE_FUNCTIONS(take)
+
+        FC_CONSTEXPR_ALGO auto for_each(auto &&...fs) {
+            return std::for_each(begin(this->self()), end(this->self()), make_caller(compose(fwd(fs)...)));
+        }
+
+        FC_CONSTEXPR_ALGO auto for_each(auto &&...fs) const {
+            return std::for_each(begin(this->self()), end(this->self()), make_caller(compose(fwd(fs)...)));
+        }
+    };
 
 } // namespace fc

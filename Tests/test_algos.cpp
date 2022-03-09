@@ -279,3 +279,50 @@ TEST(test_algos, test_tuple_like) {
         ASSERT_TRUE((x[1].first == 2 && x[1].second == 9.0));
     }
 }
+
+TEST(test_algos, test_map) {
+    std::map<std::string, std::string> x = {{"A", "a"}, {"B", "b"}, {"C", "c"}};
+
+    {
+        auto iter_x = fc::map_iter(x);
+        auto b = iter_x.find("B");
+        auto b2 = std::as_const(iter_x).find("B");
+        auto fail = iter_x.find("D");
+        static_assert(std::is_same_v<decltype(b), fc::optional<std::string &>>);
+        static_assert(std::is_same_v<decltype(b2), fc::optional<const std::string &>>);
+        ASSERT_EQ(b, "b");
+        ASSERT_EQ(b2, "b");
+        ASSERT_FALSE(fail);
+
+        auto c = iter_x.take("C");
+        static_assert(std::is_same_v<decltype(c), fc::optional<std::string>>);
+        ASSERT_EQ(c, "c");
+
+        auto fail2 = iter_x.take("C");
+        ASSERT_FALSE(fail2);
+    }
+
+    {
+        auto x2 = x;
+        auto b = fc::into_map_iter(std::move(x2)).find("B");
+        static_assert(std::is_same_v<decltype(b), fc::optional<std::string>>);
+        ASSERT_EQ(b, "b");
+    }
+    {
+        auto x2 = x;
+        auto b = fc::into_map_iter(std::move(x2)).take("B");
+        static_assert(std::is_same_v<decltype(b), fc::optional<std::string>>);
+        ASSERT_EQ(b, "b");
+    }
+
+    {
+        std::string r1, r2;
+        fc::map_iter(x).for_each([&](auto... xs) { ((r1 += xs), ...); });
+        fc::map_iter(x).for_each([&](auto xs) {
+            auto &[a, b] = xs;
+            r2 += a + b;
+        });
+        ASSERT_EQ(r1, "AaBb");
+        ASSERT_EQ(r2, "AaBb");
+    }
+}
