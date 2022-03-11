@@ -304,6 +304,11 @@ TEST(test_optional, test_comparison) {
     ASSERT_TRUE(z < 23);
     ASSERT_TRUE(y == 42);
     ASSERT_TRUE(z != 42);
+
+    ASSERT_TRUE(0 > x);
+    ASSERT_TRUE(100 > y);
+    ASSERT_TRUE(42 == y);
+    ASSERT_TRUE(42 != z);
 }
 
 TEST(test_optional_and_optional_ref, test_extensions) {
@@ -568,7 +573,7 @@ TEST(test_optional_ref, test_assign) {
         Trivial2 a;
         fc::optional<Trivial &> x;
         x = a;
-        ASSERT_TRUE(a == x);
+        ASSERT_TRUE(&a == &*x);
     }
 }
 
@@ -585,12 +590,12 @@ TEST(test_optional_ref, test_comparison) {
     ASSERT_TRUE(z == fc::nullopt);
 
     ASSERT_TRUE(x == a);
-    ASSERT_TRUE(x != b);
+    ASSERT_TRUE(x == b);
     ASSERT_TRUE(z != a);
     ASSERT_TRUE(z != b);
     ASSERT_TRUE(w == a);
 
     ASSERT_TRUE(x == w);
-    ASSERT_TRUE(y != w);
+    ASSERT_TRUE(y == w);
     ASSERT_TRUE(z != w);
 }

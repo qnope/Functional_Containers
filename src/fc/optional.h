@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <memory>
-#include <type_traits>
 #include <utility>
 
 namespace fc {
@@ -44,30 +43,6 @@ namespace fc {
             (convertible_or_constructible_from_optional<T, U> ||
              (std::is_assignable_v<T &, optional<U> &> || std::is_assignable_v<T &, const optional<U> &> ||
               std::is_assignable_v<T &, optional<U> &&> || std::is_assignable_v<T &, const optional<U> &&>));
-
-        template <typename T>
-        concept copy_assignable = std::copy_constructible<T> && std::is_copy_assignable_v<T>;
-
-        template <typename T>
-        concept move_assignable = std::move_constructible<T> && std::is_move_assignable_v<T>;
-
-        template <typename T, typename U>
-        concept assignable = std::constructible_from<T, U> && std::assignable_from<T &, U>;
-
-        template <typename T>
-        concept trivially_destructible = std::is_trivially_destructible_v<T>;
-
-        template <typename T>
-        concept trivially_copy_assignable = std::is_trivially_copy_constructible_v<T> &&
-            std::is_trivially_copy_assignable_v<T> && trivially_destructible<T>;
-
-        template <typename T>
-        concept trivially_move_assignable = std::is_trivially_move_constructible_v<T> &&
-            std::is_trivially_move_assignable_v<T> && trivially_destructible<T>;
-
-        template <typename T>
-        concept lvalue = std::is_lvalue_reference_v<T>;
-
     } // namespace details
 
     template <typename T>
@@ -325,11 +300,11 @@ namespace fc {
         // assign 2
         constexpr optional &operator=(const optional &other)                                         //
             noexcept(std::is_nothrow_copy_assignable_v<T> &&std::is_nothrow_copy_constructible_v<T>) //
-            requires(details::copy_assignable<T> &&details::trivially_copy_assignable<T>) = default;
+            requires(copy_assignable<T> &&trivially_copy_assignable<T>) = default;
 
         constexpr optional &operator=(const optional &other) //
             noexcept(std::is_nothrow_copy_assignable_v<T>)   //
-            requires(details::copy_assignable<T>) {
+            requires(copy_assignable<T>) {
             if (this->m_has_value && other) {
                 this->m_payload = *other;
             } else if (other) {
@@ -343,11 +318,11 @@ namespace fc {
         // assign 3
         constexpr optional &operator=(optional &&other)                                              //
             noexcept(std::is_nothrow_move_assignable_v<T> &&std::is_nothrow_move_constructible_v<T>) //
-            requires(details::move_assignable<T> &&details::trivially_move_assignable<T>) = default;
+            requires(move_assignable<T> &&trivially_move_assignable<T>) = default;
 
         constexpr optional &operator=(optional &&other)    //
             noexcept(std::is_nothrow_move_assignable_v<T>) //
-            requires(details::move_assignable<T>) {
+            requires(move_assignable<T>) {
             if (this->m_has_value && other) {
                 this->m_payload = std::move(*other);
             } else if (other) {
@@ -362,7 +337,7 @@ namespace fc {
         template <typename U = T>
         constexpr optional &operator=(U &&x)                                                             //
             noexcept(std::is_nothrow_assignable_v<T &, U &&> &&std::is_nothrow_constructible_v<T, U &&>) //
-            requires(details::assignable<T, U> && !std::is_same_v<std::remove_cvref_t<U>, optional<T>> &&
+            requires(assignable<T, U> && !std::is_same_v<std::remove_cvref_t<U>, optional<T>> &&
                      (!std::is_scalar_v<T> || !std::same_as<std::decay_t<U>, T>)) {
             if (this->m_has_value) {
                 this->m_payload = fwd(x);
@@ -376,7 +351,7 @@ namespace fc {
         template <typename U>
         constexpr optional &operator=(const optional<U> &other)                                                    //
             noexcept(std::is_nothrow_assignable_v<T &, const U &> &&std::is_nothrow_constructible_v<T, const U &>) //
-            requires(details::assignable<T, const U &> &&
+            requires(assignable<T, const U &> &&
                      !details::convertible_or_constructible_or_assignable_from_optional<T, U>) {
             if (this->m_has_value && other) {
                 this->m_payload = *other;
@@ -392,8 +367,7 @@ namespace fc {
         template <typename U>
         constexpr optional &operator=(optional<U> &&other)                                               //
             noexcept(std::is_nothrow_assignable_v<T &, U &&> &&std::is_nothrow_constructible_v<T, U &&>) //
-            requires(details::assignable<T, U &&> &&
-                     !details::convertible_or_constructible_or_assignable_from_optional<T, U>) {
+            requires(assignable<T, U &&> && !details::convertible_or_constructible_or_assignable_from_optional<T, U>) {
             if (this->m_has_value && other) {
                 this->m_payload = std::move(*other);
             } else if (other) {
@@ -473,32 +447,6 @@ namespace fc {
             return this->m_payload;
         }
 
-        constexpr bool operator==(fc::nullopt_t) const noexcept { return !has_value(); }
-
-        constexpr std::strong_ordering operator<=>(fc::nullopt_t) const noexcept {
-            return has_value() ? std::strong_ordering::greater : std::strong_ordering::equal;
-        }
-
-        template <typename U>
-        constexpr bool operator==(const U &x) const noexcept {
-            return has_value() ? **this == x : false;
-        }
-
-        template <typename U>
-        constexpr std::strong_ordering operator<=>(const U &x) const noexcept {
-            return has_value() ? std::compare_strong_order_fallback(**this, x) : std::strong_ordering::less;
-        }
-
-        template <typename U>
-        constexpr bool operator==(const optional<U> &x) const noexcept {
-            return (has_value() && x) ? **this == *x : false;
-        }
-
-        template <typename U>
-        constexpr std::strong_ordering operator<=>(const optional<U> &x) const noexcept {
-            return (has_value() && x) ? std::compare_strong_order_fallback(**this, *x) : has_value() <=> x.has_value();
-        }
-
       private:
         template <typename... Args>
         constexpr void construct(Args &&...args) noexcept(std::is_nothrow_constructible_v<StoredType, Args &&...>) {
@@ -532,7 +480,7 @@ namespace fc {
 
         template <typename U>
         constexpr optional(U &&x) noexcept // 8
-            requires(details::lvalue<U> &&std::convertible_to<U, T &>) {
+            requires(lvalue<U> &&std::convertible_to<U, T &>) {
             m_ptr = std::addressof(x);
         }
 
@@ -546,7 +494,7 @@ namespace fc {
 
         template <typename U>
         constexpr optional &operator=(U &&x) noexcept // 4
-            requires(details::lvalue<U> &&std::convertible_to<U, T &>) {
+            requires(lvalue<U> &&std::convertible_to<U, T &>) {
             m_ptr = std::addressof(x);
             return *this;
         }
@@ -596,21 +544,39 @@ namespace fc {
             swap(m_ptr, x.m_ptr);
         }
 
-        constexpr bool operator==(fc::nullopt_t) const noexcept { return !m_ptr; }
-
-        template <typename U>
-        constexpr bool operator==(U &x) const noexcept requires(!is_optional_v<U>) {
-            return m_ptr == std::addressof(x);
-        }
-
-        template <typename U>
-        constexpr bool operator==(const optional<U &> &x) const noexcept {
-            return m_ptr == x.m_ptr;
-        }
-
       private:
         T *m_ptr = nullptr;
     };
+
+    template <typename T>
+    constexpr bool operator==(const optional<T> &x, fc::nullopt_t) noexcept {
+        return !x;
+    }
+
+    template <typename T>
+    constexpr std::strong_ordering operator<=>(const optional<T> &x, fc::nullopt_t) noexcept {
+        return x ? std::strong_ordering::greater : std::strong_ordering::equal;
+    }
+
+    template <typename T, typename U>
+    constexpr bool operator==(const optional<T> &x, const U &y) noexcept {
+        return x ? *x == y : false;
+    }
+
+    template <typename T, typename U>
+    constexpr std::strong_ordering operator<=>(const optional<T> &x, const U &y) noexcept {
+        return x ? std::compare_strong_order_fallback(*x, y) : std::strong_ordering::less;
+    }
+
+    template <typename T, typename U>
+    constexpr bool operator==(const optional<T> &x, const optional<U> &y) noexcept {
+        return (x && y) ? *x == *y : false;
+    }
+
+    template <typename T, typename U>
+    constexpr std::strong_ordering operator<=>(const optional<T> &x, const optional<U> &y) noexcept {
+        return (x && y) ? std::compare_strong_order_fallback(*x, *y) : x.has_value() <=> y.has_value();
+    }
 
     template <typename T>
     constexpr void swap(optional<T> &a, optional<T> &b) //
