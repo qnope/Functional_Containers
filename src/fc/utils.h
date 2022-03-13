@@ -5,10 +5,6 @@
 
 #include "concepts.h"
 
-#ifndef fwd
-#define fwd(x) static_cast<decltype(x) &&>(x)
-#endif
-
 namespace fc {
     template <typename T>
     struct decay_ref {
@@ -88,5 +84,51 @@ namespace fc {
     concept apply_invocable = applyable_object<Tuple> && requires(F &&f, Tuple &&tuple) {
         fc::apply(fwd(f), fwd(tuple));
     };
+
+    inline constexpr auto make_caller(auto f) {
+        return [f = std::move(f)](auto &&x) {
+            if constexpr (apply_invocable<decltype(f), decltype(x)>) {
+                return fc::apply(f, fwd(x));
+            } else {
+                return std::invoke(f, fwd(x));
+            }
+        };
+    }
+
+    template <typename T, bool is_ref, bool is_const>
+    using infer_type_from_cv_ref_t = std::conditional_t<
+        is_ref,
+        std::conditional_t<is_const, std::add_lvalue_reference_t<std::add_const_t<T>>, std::add_lvalue_reference_t<T>>,
+        std::conditional_t<is_const, std::add_const_t<T>, T>>;
+
+    template <typename T>
+    using infer_value_type_from_cvref_container_t =
+        infer_type_from_cv_ref_t<typename std::remove_cvref_t<T>::value_type, std::is_lvalue_reference_v<T>,
+                                 std::is_const_v<std::remove_reference_t<T>>>;
+
+    using std::begin;
+    using std::empty;
+    using std::end;
+    using std::size;
+
+    template <typename C>
+    constexpr auto call_end(C &&x) noexcept {
+        return end(fwd(x));
+    }
+
+    template <typename C>
+    constexpr auto call_begin(C &&x) noexcept {
+        return begin(fwd(x));
+    }
+
+    template <typename C>
+    constexpr auto call_size(C &&x) noexcept {
+        return size(fwd(x));
+    }
+
+    template <typename C>
+    constexpr auto call_empty(C &&x) noexcept {
+        return empty(fwd(x));
+    }
 
 } // namespace fc

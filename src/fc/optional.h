@@ -474,15 +474,13 @@ namespace fc {
 
         template <typename U>
         constexpr optional(optional<U &> x) noexcept // 4 and 5
-            requires(std::convertible_to<U &, T &>) {
-            m_ptr = x.m_ptr;
-        }
+            requires(std::convertible_to<U &, T &>) :
+            m_ptr{x.m_ptr} {}
 
         template <typename U>
         constexpr optional(U &&x) noexcept // 8
-            requires(lvalue<U> &&std::convertible_to<U, T &>) {
-            m_ptr = std::addressof(x);
-        }
+            requires(lvalue<U> &&std::convertible_to<U, T &>) :
+            m_ptr{std::addressof(x)} {}
 
         // 1
         constexpr optional &operator=(nullopt_t) noexcept {

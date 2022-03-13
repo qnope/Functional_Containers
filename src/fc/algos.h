@@ -101,16 +101,6 @@ namespace fc {
         return FC_CAT(foo, _static)(std::move(this->self()), fwd(xs)...);                                              \
     }
 
-    inline constexpr auto make_caller(auto f) {
-        return [f = std::move(f)](auto &&x) {
-            if constexpr (apply_invocable<decltype(f), decltype(x)>) {
-                return fc::apply(f, fwd(x));
-            } else {
-                return std::invoke(f, fwd(x));
-            }
-        };
-    }
-
     template <typename Rng>
     struct generic_algos : crtp<Rng, generic_algos<Rng>> {
         FC_CONSTEXPR_ALGO auto all_of(auto &&...fs) const noexcept requires(sizeof...(fs) > 0) {
