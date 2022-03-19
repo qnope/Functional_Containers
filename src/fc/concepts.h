@@ -7,14 +7,18 @@
 #include <concepts>
 #include <type_traits>
 
+#ifndef fwd
+#define fwd(x) static_cast<decltype(x) &&>(x)
+#endif
+
 namespace fc {
     using std::begin;
     using std::end;
 
     template <typename T>
     concept iterable = requires(T &&a) {
-        begin(a);
-        end(a);
+        begin(fwd(a));
+        end(fwd(a));
     };
 
     template <typename T>

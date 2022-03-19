@@ -4,30 +4,6 @@
 #include "algos.h"
 
 namespace fc {
-    using std::begin;
-    using std::empty;
-    using std::end;
-    using std::size;
-
-    template <typename C>
-    constexpr auto call_end(C &&x) noexcept {
-        return end(fwd(x));
-    }
-
-    template <typename C>
-    constexpr auto call_begin(C &&x) noexcept {
-        return begin(fwd(x));
-    }
-
-    template <typename C>
-    constexpr auto call_size(C &&x) noexcept {
-        return size(fwd(x));
-    }
-
-    template <typename C>
-    constexpr auto call_empty(C &&x) noexcept {
-        return empty(fwd(x));
-    }
 
     template <iterable T>
     struct iter_impl<T> :
