@@ -1,4 +1,5 @@
 target_sources(FC INTERFACE
+    map.h
     zip.h
     ints.h
     iter.h
