@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <functional>
 
+#include "map.h"
 #include "utils.h"
 #include "optional.h"
 
@@ -278,6 +279,18 @@ namespace fc {
         FC_MAKE_FUNCTIONS(min_element)
         FC_MAKE_FUNCTIONS(max_element)
         FC_MAKE_FUNCTIONS(minmax_element)
+
+      private:
+        FC_CONSTEXPR_ALGO static auto map_static(auto &&that, auto &&...fs) {
+            auto f = compose(std::move(fs)...);
+            using F = decltype(f);
+            struct result : generic_algos<result>, map_range<F, decltype(that)> {
+                using map_range<F, decltype(that)>::map_range;
+            };
+            return result{std::move(f), fwd(that)};
+        }
+
+        FC_MAKE_FUNCTIONS(map)
     };
 
     template <typename Rng>

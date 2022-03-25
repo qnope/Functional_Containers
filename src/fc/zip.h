@@ -14,7 +14,7 @@ namespace fc {
         using pointer = std::add_pointer_t<value_type>;
         using iterator_category = std::input_iterator_tag;
 
-        constexpr zip_iterator(optional<F &> f, Args... xs) noexcept : m_f{std::move(f)}, m_its{std::move(xs)...} {}
+        constexpr zip_iterator(optional<F &> f, Args... xs) noexcept : m_f{f}, m_its{std::move(xs)...} {}
 
         constexpr reference operator*() const noexcept { return apply(*m_f, m_its); }
 
