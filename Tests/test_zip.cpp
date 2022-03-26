@@ -44,7 +44,7 @@ TEST(test_zip, test_zip_not_same_size) {
     ASSERT_EQ(result, 65 * 5 + 4 * 4 + 6);
 
     ASSERT_TRUE(fc::zip(a, std::vector{10, 65, 4, 1, 25, 34})
-                    .equal(std::initializer_list<std::pair<int, int>>{{0, 10}, {5, 65}, {4, 4}, {6, 1}}));
+                    .equal(std::initializer_list<std::tuple<int, int>>{{0, 10}, {5, 65}, {4, 4}, {6, 1}}));
 }
 
 TEST(test_zip, test_not_movable_object) {
@@ -106,5 +106,9 @@ TEST(test_zip, test_build_map) {
     std::vector x = {"Antoine"s, "Baptiste"s, "Michou"s};
     std::vector y = {27, 28, 62};
 
-    // auto map = fc::zip(x, y).to<std::map<std::string, int>>();
+    auto map = fc::zip_for_map(x, y).to<std::map>();
+
+    ASSERT_EQ(map[x[0]], 27);
+    ASSERT_EQ(map[x[1]], 28);
+    ASSERT_EQ(map[x[2]], 62);
 }
