@@ -14,8 +14,7 @@ TEST(test_map, map_lvalue_lazy) {
 
 TEST(test_map, map_rvalue_lazy) {
     std::vector x = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    auto y = fc::into_iter(std::move(x)).map([](auto x) { return x * 2; }, [](auto x) { return x + 3; });
 
-    ASSERT_TRUE(fc::into_iter(std::move(x))
-                    .map([](auto x) { return x * 2; }, [](auto x) { return x + 3; })
-                    .equal({3, 5, 7, 9, 11, 13, 15, 17, 19, 21}));
+    ASSERT_TRUE(y.equal({3, 5, 7, 9, 11, 13, 15, 17, 19, 21}));
 }

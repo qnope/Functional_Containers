@@ -11,8 +11,7 @@
 #include <functional>
 
 #include "map.h"
-#include "utils.h"
-#include "optional.h"
+#include "filter.h"
 
 #ifdef __cpp_lib_constexpr_algorithms
 #define FC_CONSTEXPR_ALGO constexpr
@@ -290,7 +289,17 @@ namespace fc {
             return result{std::move(f), fwd(that)};
         }
 
+        FC_CONSTEXPR_ALGO static auto filter_static(auto &&that, auto &&...fs) {
+            auto f = compose(std::move(fs)...);
+            using F = decltype(f);
+            struct result : generic_algos<result>, filter_range<F, decltype(that)> {
+                using filter_range<F, decltype(that)>::filter_range;
+            };
+            return result{std::move(f), fwd(that)};
+        }
+
         FC_MAKE_FUNCTIONS(map)
+        FC_MAKE_FUNCTIONS(filter)
     };
 
     template <typename Rng>
