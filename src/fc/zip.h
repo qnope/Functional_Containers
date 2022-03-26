@@ -83,6 +83,14 @@ namespace fc {
         return zip_with(f, fwd(xs)...);
     }
 
+    template <iterable C1, iterable C2>
+    constexpr auto zip_for_map(C1 &&c1, C2 &&c2) {
+        using value_type = std::pair<std::remove_cvref_t<typename std::remove_cvref_t<C1>::value_type>,
+                                     std::remove_cvref_t<typename std::remove_cvref_t<C2>::value_type>>;
+        auto f = [](auto &&...xs) { return value_type(fwd(xs)...); };
+        return zip_with(f, fwd(c1), fwd(c2));
+    }
+
     template <iterable... Containers>
     constexpr auto enumerate(Containers &&...xs) {
         return zip(ints(), fwd(xs)...);

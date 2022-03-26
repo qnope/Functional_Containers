@@ -100,3 +100,15 @@ TEST(test_zip, test_enumerate) {
     ASSERT_TRUE(fc::enumerate(x, y).equal(
         {std::tuple{0, "Antoine"s, "Carlitus"s}, {1, "Baptiste"s, "Papitus"s}, {2, "Michou"s, "Christianus"s}}));
 }
+
+TEST(test_zip, test_build_map) {
+    using namespace std::string_literals;
+    std::vector x = {"Antoine"s, "Baptiste"s, "Michou"s};
+    std::vector y = {27, 28, 62};
+
+    auto map = fc::zip_for_map(x, y).to<std::map>();
+
+    ASSERT_EQ(map[x[0]], 27);
+    ASSERT_EQ(map[x[1]], 28);
+    ASSERT_EQ(map[x[2]], 62);
+}
