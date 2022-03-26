@@ -281,7 +281,7 @@ namespace fc {
 
       private:
         FC_CONSTEXPR_ALGO static auto map_static(auto &&that, auto &&...fs) {
-            auto f = compose(std::move(fs)...);
+            auto f = compose(fwd(fs)...);
             using F = decltype(f);
             struct result : generic_algos<result>, map_range<F, decltype(that)> {
                 using map_range<F, decltype(that)>::map_range;
@@ -290,7 +290,7 @@ namespace fc {
         }
 
         FC_CONSTEXPR_ALGO static auto filter_static(auto &&that, auto &&...fs) {
-            auto f = compose(std::move(fs)...);
+            auto f = compose(fwd(fs)...);
             using F = decltype(f);
             struct result : generic_algos<result>, filter_range<F, decltype(that)> {
                 using filter_range<F, decltype(that)>::filter_range;
@@ -300,6 +300,36 @@ namespace fc {
 
         FC_MAKE_FUNCTIONS(map)
         FC_MAKE_FUNCTIONS(filter)
+
+        template <template <typename...> typename C>
+        FC_CONSTEXPR_ALGO auto to() const {
+            return C(call_begin(this->self()), call_end(this->self()));
+        }
+
+        template <typename C>
+        FC_CONSTEXPR_ALGO auto to() const {
+            return C(call_begin(this->self()), call_end(this->self()));
+        }
+
+        template <template <typename...> typename C>
+        FC_CONSTEXPR_ALGO auto map(auto &&...fs) const {
+            return map(fwd(fs)...).template to<C>();
+        }
+
+        template <typename C>
+        FC_CONSTEXPR_ALGO auto map(auto &&...fs) const {
+            return map(fwd(fs)...).template to<C>();
+        }
+
+        template <template <typename...> typename C>
+        FC_CONSTEXPR_ALGO auto filter(auto &&...fs) const {
+            return filter(fwd(fs)...).template to<C>();
+        }
+
+        template <typename C>
+        FC_CONSTEXPR_ALGO auto filter(auto &&...fs) const {
+            return filter(fwd(fs)...).template to<C>();
+        }
     };
 
     template <typename Rng>
