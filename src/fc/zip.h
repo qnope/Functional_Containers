@@ -78,9 +78,15 @@ namespace fc {
 
     template <iterable... Containers>
     constexpr auto zip(Containers &&...xs) {
-        using value_type = std::tuple<infer_value_type_from_cvref_container_t<Containers>...>;
-        auto f = [](auto &&...xs) { return value_type(fwd(xs)...); };
-        return zip_with(f, fwd(xs)...);
+        if constexpr (sizeof...(Containers) == 2) {
+            using value_type = std::pair<infer_value_type_from_cvref_container_t<Containers>...>;
+            auto f = [](auto &&...xs) { return value_type(fwd(xs)...); };
+            return zip_with(f, fwd(xs)...);
+        } else {
+            using value_type = std::tuple<infer_value_type_from_cvref_container_t<Containers>...>;
+            auto f = [](auto &&...xs) { return value_type(fwd(xs)...); };
+            return zip_with(f, fwd(xs)...);
+        }
     }
 
     template <iterable... Containers>
