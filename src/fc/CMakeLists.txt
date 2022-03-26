@@ -5,5 +5,6 @@ target_sources(FC INTERFACE
     iter.h
     algos.h
     utils.h
+    filter.h
     concepts.h
     optional.h)
